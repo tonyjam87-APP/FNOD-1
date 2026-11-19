@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Five Nights of Darkness - FULL GAME</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <link href="https://fonts.googleapis.com/css2?family=Nosifer&family=Creepster&display=swap" rel="stylesheet">
+  
+<style>
+    /* --- ESTILOS DE LA INTRODUCCIÓN Y MENÚS --- */
+    body {
+      margin: 0;
+      background-color: #0f0f0f;
+      color: #eaeaea;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .app { position: relative; width: 100%; height: 100%; }
+
+    /* --- AVISO DE GIRAR CELULAR (el juego funciona en horizontal) --- */
+    #rotateOverlay {
+      display: none;
+      position: fixed; inset: 0; z-index: 999999;
+      background: #0f0f0f; color: #eaeaea;
+      flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 20px;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+    #rotateOverlay .icono-girar { font-size: 60px; margin-bottom: 20px; animation: girar 1.6s infinite ease-in-out; }
+    @keyframes girar { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(90deg); } }
+    @media (max-width: 900px) and (orientation: portrait) {
+      #rotateOverlay { display: flex; }
+    }
+    .screen {
+      position: absolute; inset: 0;
+      display: none; padding: 40px;
+      text-align: center; opacity: 0;
+      transition: opacity 0.4s ease;
+      z-index: 100;
+      background: #0f0f0f;
+    }
+    .screen.active { display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 1; }
+    
+    /* Fuentes en VW para que escalen con F11 */
+    .main-title { font-family: 'Nosifer', cursive; font-size: clamp(32px, 8vw, 110px); color: #ff0000; text-shadow: 8px 8px 20px #000; margin: 0; }
+    .title { font-family: 'Nosifer', cursive; font-size: clamp(18px, 3.5vw, 46px); font-weight: bold; margin-bottom: 20px; color: #ff4444; text-shadow: 2px 2px 5px #000; }
+    .night-title { font-family: 'Nosifer', cursive; font-size: clamp(32px, 8vw, 110px); font-weight: bold; color: #ff0000; text-shadow: 8px 8px 20px #000; }
+    
+    .content-text { font-size: clamp(14px, 1.2vw, 20px); max-width: 800px; margin-bottom: 30px; line-height: 1.6; text-align: left; }
+    
+    .animatronic-info { display: flex; align-items: flex-start; justify-content: center; gap: 40px; text-align: left; }
+    .animatronic-img-menu { max-width: 20vw; height: auto; border: 2px solid #666; border-radius: 8px; margin-top: -40px; }
+    
+    .menu-buttons { position: absolute; bottom: 30px; left: 30px; right: 30px; display: flex; justify-content: space-between; }
+    .menu-buttons button { background-color: #333; color: #fff; border: none; padding: 10px 20px; font-size: 14px; cursor: pointer; border-radius: 5px; }
+
+/* --- SISTEMA DE MAPA Y BOTONES --- */
+    #mapaContainer { 
+      position: relative; 
+      width: 95%; 
+      margin: 10px auto; 
+      border: 2px solid #555; 
+      background: #000; 
+      display: none; /* Se oculta por defecto */
+    }
+
+    /* --- ESTILOS DEL MOTOR DEL JUEGO (OFICINA Y CÁMARAS) --- */
+    #game-interface { display: flex; width: 100%; height: 100%; background: black; }
+    
+#hud { position:fixed; top:0; left:50%; transform:translateX(-50%); font-size:clamp(13px, 1.8vw, 26px); background:rgba(0,0,0,0.8); padding:14px 26px; border:2px solid #555; border-radius:0 0 10px 10px; z-index:1000; display:none; }
+
+/* --- BARRA DE ENERGÍA --- */
+#energiaBarWrap {
+  width: 100%;
+  height: 10px;
+  background: #222;
+  border: 1px solid #555;
+  border-radius: 5px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+#energiaBar {
+  height: 100%;
+  width: 100%;
+  background: #2ecc40;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+#energiaBar.media { background: #ffb302; }
+#energiaBar.baja { background: #ff4136; }
+
+/* --- BOTÓN DE MUTE --- */
+#btnMute {
+  position: absolute;
+  top: 6px;
+  right: -46px;
+  background: #222;
+  color: #fff;
+  border: 2px solid #555;
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  font-size: 16px;
+  cursor: pointer;
+  line-height: 1;
+}
+#btnMute:hover { background: #444; }
+
+    
+    /* CAMARAS: Ancho proporcional */
+    #camaras { width:35%; background:#111; padding:10px; display:flex; flex-direction:column; align-items:center; border-right:2px solid #444; }
+    #camLabel { margin:10px; font-size:clamp(11px, 1.2vw, 18px); color:#0f0; }
+    
+    /* El alto de la cámara ahora depende del alto de la pantalla (VH) */
+    #camContainer { position:relative; width:95%; height:45vh; border:2px solid white; background:#000; overflow:hidden; }
+   #camImage { position:absolute; top:0; left:0; width:100%; height:100%; object-fit: cover; background-color:black; z-index:1; }
+   
+#mapaContainer img { width: 100%; display: block; opacity: 0.8; }
+.cam-btn-mapa { position: absolute; width: 12%; height: 10%; background: rgba(0, 255, 0, 0.1); color: #0f0; border: 1px solid #0f0; cursor: pointer; font-size: clamp(10px, 0.9vw, 15px); font-weight: bold; z-index: 100; }
+.cam-btn-mapa:hover { background: rgba(0, 255, 0, 0.4); color: white; }
+#btnCam01 { top: 11%; left: 62%; } #btnCam02 { top: 55%; left: 80%; } #btnCam03 { top: 79%; left: 46%; }
+#btnCam04 { top: 79%; left: 80%; } #btnCam05 { top: 22%; left: 76%; } #btnCam06 { top: 79%; left: 22%; }
+#btnCam07 { top: 37%; left: 46%; } #btnCam08 { top: 11%; left: 30%; } #btnCam09 { top: 24%; left: 14%; }
+
+    /* OFICINA: El corazón del sistema responsivo */
+    #oficina { 
+        flex:1; 
+        position:relative; 
+        background-image:url('https://github.com/tonyjam87-APP/FNOD-1/blob/main/Oficina.png?raw=true'); 
+        background-size:100% 100%; /* Imagen estirable */
+        background-position:center; 
+    }
+    
+    #poster { position:absolute; top:5%; left:49%; transform:translateX(-50%); width:15%; z-index:5; pointer-events:none; }
+    #posterBtn { position:absolute; top:5%; left:49%; transform:translateX(-50%); width:15%; height:20%; background:transparent; border:none; cursor:pointer; z-index:10; }
+
+    /* Puertas en % */
+    /* Puerta de madera vieja y oscura que gira sobre sus bisagras (como en el 2, sin rasguños) */
+    .puerta { position:absolute; box-sizing:border-box; z-index:8; pointer-events:none;
+      border:2px solid #0d0805; background:#2a1c11;
+      backface-visibility:hidden;
+      transition: transform 0.5s cubic-bezier(0.5, 0, 0.9, 0.5), filter 0.5s ease-in; }
+    .puerta::before { content:""; position:absolute; inset:0; pointer-events:none; backface-visibility:hidden;
+      background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 340' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='m' x1='0' x2='1'%3E%3Cstop offset='0' stop-color='%23382619'/%3E%3Cstop offset='.5' stop-color='%234e3523'/%3E%3Cstop offset='1' stop-color='%23342317'/%3E%3C/linearGradient%3E%3ClinearGradient id='v' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23232b2a'/%3E%3Cstop offset='.45' stop-color='%23101413'/%3E%3Cstop offset='.5' stop-color='%23364240'/%3E%3Cstop offset='.56' stop-color='%23101413'/%3E%3Cstop offset='1' stop-color='%23070909'/%3E%3C/linearGradient%3E%3ClinearGradient id='s' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23000' stop-opacity='0'/%3E%3Cstop offset='.7' stop-color='%23000' stop-opacity='.15'/%3E%3Cstop offset='1' stop-color='%23000' stop-opacity='.6'/%3E%3C/linearGradient%3E%3CradialGradient id='k'%3E%3Cstop offset='0' stop-color='%23e0c27a'/%3E%3Cstop offset='.5' stop-color='%23a07a35'/%3E%3Cstop offset='1' stop-color='%234a3412'/%3E%3C/radialGradient%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.08 0.03' numOctaves='3' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 0.08  0 0 0 0 0.05  0 0 0 0 0.02  0 0 0 1.4 -0.55'/%3E%3C/filter%3E%3C/defs%3E%3Crect width='100' height='340' fill='url(%23m)'/%3E%3Crect x='23.8' y='0' width='0.9' height='340' fill='%235a3f28' opacity='0.42'/%3E%3Crect x='47.4' y='0' width='0.9' height='340' fill='%231e140c' opacity='0.42'/%3E%3Crect x='46.9' y='0' width='0.9' height='340' fill='%232a1c11' opacity='0.45'/%3E%3Crect x='47.0' y='0' width='1.2' height='340' fill='%2363462c' opacity='0.27'/%3E%3Crect x='86.1' y='0' width='0.6' height='340' fill='%232a1c11' opacity='0.41'/%3E%3Crect x='52.3' y='0' width='1.1' height='340' fill='%231e140c' opacity='0.20'/%3E%3Crect x='95.7' y='0' width='0.3' height='340' fill='%231e140c' opacity='0.40'/%3E%3Crect x='26.9' y='0' width='1.0' height='340' fill='%2363462c' opacity='0.36'/%3E%3Crect x='92.1' y='0' width='0.7' height='340' fill='%2363462c' opacity='0.44'/%3E%3Crect x='13.4' y='0' width='0.7' height='340' fill='%231e140c' opacity='0.19'/%3E%3Crect x='21.7' y='0' width='1.4' height='340' fill='%2363462c' opacity='0.38'/%3E%3Crect x='85.5' y='0' width='0.8' height='340' fill='%2363462c' opacity='0.32'/%3E%3Crect x='53.4' y='0' width='0.7' height='340' fill='%232a1c11' opacity='0.42'/%3E%3Crect x='68.2' y='0' width='1.3' height='340' fill='%235a3f28' opacity='0.45'/%3E%3Crect x='67.1' y='0' width='0.5' height='340' fill='%235a3f28' opacity='0.44'/%3E%3Crect x='90.5' y='0' width='0.9' height='340' fill='%232a1c11' opacity='0.34'/%3E%3Crect x='98.8' y='0' width='0.6' height='340' fill='%231e140c' opacity='0.17'/%3E%3Crect x='85.4' y='0' width='1.4' height='340' fill='%231e140c' opacity='0.25'/%3E%3Crect x='6.7' y='0' width='1.3' height='340' fill='%231e140c' opacity='0.24'/%3E%3Crect x='76.9' y='0' width='1.3' height='340' fill='%231e140c' opacity='0.33'/%3E%3Crect x='76.2' y='0' width='0.7' height='340' fill='%235a3f28' opacity='0.32'/%3E%3Crect x='92.2' y='0' width='0.6' height='340' fill='%232a1c11' opacity='0.45'/%3E%3Crect x='31.0' y='0' width='0.4' height='340' fill='%231e140c' opacity='0.43'/%3E%3Crect x='97.1' y='0' width='0.6' height='340' fill='%235a3f28' opacity='0.20'/%3E%3Crect x='4.2' y='0' width='1.3' height='340' fill='%235a3f28' opacity='0.26'/%3E%3Crect x='13.8' y='0' width='1.2' height='340' fill='%2363462c' opacity='0.29'/%3E%3Crect x='52.0' y='0' width='1.0' height='340' fill='%231e140c' opacity='0.34'/%3E%3Crect x='94.1' y='0' width='0.9' height='340' fill='%2363462c' opacity='0.34'/%3E%3Crect x='71.6' y='0' width='1.3' height='340' fill='%2363462c' opacity='0.44'/%3E%3Crect x='52.1' y='0' width='0.9' height='340' fill='%231e140c' opacity='0.39'/%3E%3Crect x='98.7' y='0' width='0.6' height='340' fill='%2363462c' opacity='0.33'/%3E%3Crect x='63.2' y='0' width='0.4' height='340' fill='%235a3f28' opacity='0.29'/%3E%3Crect x='67.9' y='0' width='0.7' height='340' fill='%235a3f28' opacity='0.37'/%3E%3Crect x='2.2' y='0' width='0.4' height='340' fill='%231e140c' opacity='0.44'/%3E%3Crect x='25.1' y='0' width='0.8' height='340' fill='%235a3f28' opacity='0.20'/%3E%3Crect x='18.5' y='0' width='1.1' height='340' fill='%235a3f28' opacity='0.24'/%3E%3Crect x='37.7' y='0' width='1.1' height='340' fill='%231e140c' opacity='0.44'/%3E%3Crect x='68.4' y='0' width='0.4' height='340' fill='%232a1c11' opacity='0.35'/%3E%3Crect x='26.9' y='0' width='0.7' height='340' fill='%2363462c' opacity='0.34'/%3E%3Crect x='9.7' y='0' width='1.0' height='340' fill='%235a3f28' opacity='0.35'/%3E%3Crect x='22.4' y='0' width='1.2' height='340' fill='%232a1c11' opacity='0.17'/%3E%3Crect x='74.2' y='0' width='0.5' height='340' fill='%2363462c' opacity='0.23'/%3E%3Crect x='78.7' y='0' width='0.3' height='340' fill='%232a1c11' opacity='0.24'/%3E%3Crect x='83.6' y='0' width='0.9' height='340' fill='%235a3f28' opacity='0.25'/%3E%3Crect x='82.8' y='0' width='0.4' height='340' fill='%235a3f28' opacity='0.33'/%3E%3Crect x='42.1' y='0' width='0.9' height='340' fill='%235a3f28' opacity='0.29'/%3E%3Crect x='63.4' y='0' width='0.6' height='340' fill='%2363462c' opacity='0.16'/%3E%3Crect x='41.3' y='0' width='0.5' height='340' fill='%2363462c' opacity='0.43'/%3E%3Crect x='88.0' y='0' width='1.4' height='340' fill='%2363462c' opacity='0.32'/%3E%3Crect x='98.6' y='0' width='1.1' height='340' fill='%231e140c' opacity='0.37'/%3E%3Crect x='83.7' y='0' width='1.0' height='340' fill='%235a3f28' opacity='0.31'/%3E%3Crect x='89.0' y='0' width='1.2' height='340' fill='%235a3f28' opacity='0.19'/%3E%3Crect x='24.5' y='0' width='0.3' height='340' fill='%232a1c11' opacity='0.42'/%3E%3Crect x='90.0' y='0' width='0.9' height='340' fill='%231e140c' opacity='0.29'/%3E%3Crect x='12.1' y='0' width='0.9' height='340' fill='%232a1c11' opacity='0.35'/%3E%3Crect x='52.5' y='0' width='0.8' height='340' fill='%231e140c' opacity='0.25'/%3E%3Crect x='25.2' y='0' width='1.2' height='340' fill='%2363462c' opacity='0.39'/%3E%3Crect x='6.1' y='0' width='0.5' height='340' fill='%231e140c' opacity='0.31'/%3E%3Crect x='81.7' y='0' width='0.5' height='340' fill='%235a3f28' opacity='0.43'/%3E%3Crect x='80.6' y='0' width='1.2' height='340' fill='%231e140c' opacity='0.30'/%3E%3Crect x='57.1' y='0' width='0.7' height='340' fill='%235a3f28' opacity='0.22'/%3E%3Crect x='61.8' y='0' width='0.9' height='340' fill='%231e140c' opacity='0.29'/%3E%3Crect x='77.6' y='0' width='0.3' height='340' fill='%231e140c' opacity='0.38'/%3E%3Crect x='4.6' y='0' width='0.4' height='340' fill='%2363462c' opacity='0.44'/%3E%3Crect x='85.4' y='0' width='0.4' height='340' fill='%2363462c' opacity='0.24'/%3E%3Crect x='31.5' y='0' width='0.7' height='340' fill='%2363462c' opacity='0.33'/%3E%3Crect x='36.1' y='0' width='0.5' height='340' fill='%235a3f28' opacity='0.28'/%3E%3Crect x='12.8' y='0' width='0.3' height='340' fill='%2363462c' opacity='0.39'/%3E%3Crect x='56.7' y='0' width='0.3' height='340' fill='%2363462c' opacity='0.33'/%3E%3Crect x='78.3' y='0' width='0.7' height='340' fill='%231e140c' opacity='0.34'/%3E%3Crect x='16' y='20' width='68' height='86' fill='%23241810'/%3E%3Crect x='20' y='24' width='60' height='78' fill='url(%23v)'/%3E%3Cpath d='M20 24 H80 L77 27 H23 V99 L20 102Z' fill='%23000' opacity='.55'/%3E%3Cpath d='M80 24 V102 H20 L23 99 H77 V27Z' fill='%237a5838' opacity='.5'/%3E%3Cpath d='M35 40 L48 62 L44 78' stroke='%23596866' stroke-width='.5' fill='none' opacity='.7'/%3E%3Crect x='16' y='128' width='68' height='184' fill='%23402b1c'/%3E%3Cpath d='M16 128 H84 L79 133 H21 V307 L16 312Z' fill='%23140d07' opacity='.7'/%3E%3Cpath d='M84 128 V312 H16 L21 307 H79 V133Z' fill='%23805c3a' opacity='.45'/%3E%3Crect x='26' y='145' width='48' height='150' fill='none' stroke='%23140d07' stroke-width='1.2' opacity='.6'/%3E%3Crect x='85' y='160' width='8' height='30' rx='2' fill='%233a2a14' stroke='%23120c05' stroke-width='.6'/%3E%3Cellipse cx='89' cy='175' rx='4.2' ry='3.6' fill='url(%23k)' stroke='%23231705' stroke-width='.5'/%3E%3Crect x='88.3' y='181' width='1.4' height='3' fill='%23080503'/%3E%3Crect width='100' height='340' filter='url(%23g)' opacity='.9'/%3E%3Cellipse cx='30' cy='250' rx='18' ry='30' fill='%23120a05' opacity='.25'/%3E%3Cellipse cx='70' cy='120' rx='14' ry='10' fill='%23120a05' opacity='.25'/%3E%3Crect width='100' height='340' fill='url(%23s)'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+      filter: sepia(0.55) brightness(0.45) contrast(1.15) saturate(0.8); }
+    /* mugre y manchas de humedad */
+    .puerta::after { content:""; position:absolute; inset:0; pointer-events:none;
+      background:
+        radial-gradient(ellipse 60% 18% at 40% 92%, rgba(10,6,2,0.75), transparent 70%),
+        radial-gradient(ellipse 35% 12% at 70% 30%, rgba(20,12,4,0.45), transparent 70%),
+        radial-gradient(ellipse 25% 10% at 25% 60%, rgba(30,18,6,0.4), transparent 70%),
+        radial-gradient(ellipse 40% 8% at 60% 75%, rgba(15,9,3,0.55), transparent 70%),
+        radial-gradient(ellipse 20% 30% at 85% 50%, rgba(0,0,0,0.45), transparent 70%),
+        repeating-linear-gradient(90deg, rgba(0,0,0,0.18) 0 1px, transparent 1px 7px, rgba(255,230,190,0.04) 7px 8px, transparent 8px 13px),
+        linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0) 20%, rgba(0,0,0,0) 75%, rgba(0,0,0,0.55)); }
+    #puertaDer::before { transform:scaleX(-1); }
+    #puertaIzq { transform-origin:left center;  transform: perspective(2060px) rotateY(92deg);  filter:brightness(0.3); }
+    #puertaDer { transform-origin:right center; transform: perspective(2060px) rotateY(-92deg); filter:brightness(0.3); }
+    /* cerrada queda a 70°, tapando el marco de la puerta de la pared */
+    #puertaIzq.cerrada { transform: perspective(2060px) rotateY(70deg); filter:brightness(1); animation: golpePuerta 0.3s ease-out 0.5s; }
+    #puertaDer.cerrada { transform: perspective(2060px) rotateY(-70deg); filter:brightness(1); animation: golpePuerta 0.3s ease-out 0.5s; }
+    @keyframes golpePuerta { 0% { margin-top:0; } 30% { margin-top:3px; } 100% { margin-top:0; } }
+    #jumpscareVideo { width:100%; height:100%; object-fit:cover; background:#000; }
+    /* ubicadas sobre los marcos de las puertas de la oficina (la bisagra del lado de afuera) */
+    #puertaIzq { left:0;    top:11%; height:79%; width:28%; }
+    #puertaDer { right:1.2%; top:12%; height:76%; width:25%; }
+
+    /* Botones en % */
+    .boton-game { position:absolute; width:9%; padding:1vh 0; background:#222; color:white; border:2px solid #555; cursor:pointer; z-index:20; font-size: 90%; }
+    .boton-game:disabled { cursor:not-allowed; background:#111; color:#444; opacity:0.8; }
+    #btnPuertaIzq { bottom:20%; left:2%; } #btnLuzIzq { bottom:10%; left:2%; }
+    #btnPuertaDer { bottom:20%; right:2%; } #btnLuzDer { bottom:10%; right:2%; }
+
+    /* Luces en % */
+    .overlay { position:absolute; top:9%; width:13.3%; height:25.5%; background:rgba(255,255,255,0.2); display:none; pointer-events:none; z-index:7; }
+    .overlay.encendida { display:block; } #overlayIzq { left:19.2%; } #overlayDer { right:19.3%; }
+
+   /* Entidades con posiciones y tamaños en % */
+    .entidad-img { display:none; position:absolute; z-index:15; }
+    #panda { left:40%; top:45%; width:25%; z-index:5; }
+    #tigre { left:40%; top:34%; width:25%; z-index:5; }
+    #arañaCam { right:2%; top:2%; width:18%; z-index:5; transform:rotate(15deg); }
+    #ophisCam { left:20%; top:55%; width:30%; z-index:5; }
+
+    #arañaOficina { top:22%; right:21%; width:10%; z-index:15; }
+    #ophisOficina { top:22%; left:21%; width:10%; z-index:15; }
+    #cuervoIzq { top:47%; left:24%; width:10%; z-index:15; }
+    #cuervoDer { top:47%; right:24%; width:10%; z-index:15; }
+
+
+/* CUERVO FORMA COMPLETA */
+#cuervo-de-pie-office { display:none; position:absolute; bottom:2%; left:30%; height:65%; width:auto; justify-content:center; align-items:flex-end; z-index:30; background:rgba(0,0,0,0); } 
+#img-cuervo-de-pie { height:100%; width:auto; object-fit:contain; }
+
+/* PANTALLAS */
+#victoryScreen, #jumpscareOverlay { 
+  display:none; 
+  position:fixed; 
+  inset:0; 
+  background:black; 
+  z-index:10000; 
+  flex-direction:column; 
+  justify-content:center; 
+  align-items:center; 
+  color:white; 
+  text-align:center; 
+}
+
+
+/* --- CRÉDITOS --- */
+#creditsScreen {
+  position: fixed;
+  inset: 0;
+  background: black;
+  color: white;
+  z-index: 20000;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  overflow: hidden;
+}
+
+.credits-container {
+  animation: scrollCredits 25s linear forwards;
+}
+
+.credits-container h1 {
+  font-family: 'Nosifer', cursive;
+  color: red;
+  font-size: clamp(24px, 4vw, 56px);
+  margin-bottom: 40px;
+}
+
+.credits-container p {
+  font-size: clamp(14px, 1.5vw, 22px);
+  margin: 20px 0;
+}
+
+.fin {
+  margin-top: 50px;
+  font-size: clamp(16px, 2vw, 28px);
+  color: red;
+}
+
+#creditsScreen button {
+  margin-top: 50px;
+  padding: 12px 25px;
+  background: #222;
+  border: 2px solid #555;
+  color: white;
+  cursor: pointer;
+  font-size: clamp(13px, 1vw, 17px);
+}
+
+#creditsScreen button:hover {
+  background: #444;
+}
+
+@keyframes scrollCredits {
+  0% { transform: translateY(100%); }
+  100% { transform: translateY(-120%); }
+}
+
+#btnCreditos {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 25px;
+  background: #222;
+  border: 2px solid #555;
+  color: white;
+  cursor: pointer;
+  font-size: clamp(13px, 1vw, 17px);
+  z-index: 21000;
+}
+
+#btnCreditos:hover {
+  background: #444;
+}
+
+
+    /* --- Pantalla de ingreso --- */
+    #loginScreen { position:fixed; inset:0; z-index:50000; background:radial-gradient(circle at 50% 40%, #1a0000, #000 70%);
+      display:flex; align-items:center; justify-content:center; font-family:inherit; }
+    .login-box { text-align:center; color:#ddd; display:flex; flex-direction:column; gap:14px; align-items:center; padding:20px; max-width:90vw; }
+    .login-box h2 { color:#c00; font-size:clamp(22px,4vw,44px); margin:0; text-shadow:0 0 12px #f00; letter-spacing:2px; }
+    #loginSaludo { margin:0; font-size:clamp(14px,2vw,22px); color:#eee; min-height:1em; }
+    #loginNombre { font-size:clamp(16px,2.2vw,24px); padding:10px 14px; width:min(340px,80vw); background:#111; color:#fff; border:2px solid #600; border-radius:6px; text-align:center; }
+    #loginBtn { font-size:clamp(16px,2vw,22px); padding:10px 34px; background:#600; color:#fff; border:2px solid #f00; border-radius:6px; cursor:pointer; }
+    #loginOtro { background:none; border:none; color:#888; text-decoration:underline; cursor:pointer; font-size:14px; }
+    .login-box small { color:#777; font-size:12px; }
+</style>
+</head>
+<body>
+
+<div id="rotateOverlay">
+  <div class="icono-girar">📱</div>
+  <p style="font-size:1.3em; max-width:500px;">Girá tu celular para jugar<br><span style="font-size:0.8em; color:#aaa;">Este juego está diseñado para verse en horizontal</span></p>
+</div>
+
+
+
+  <div class="app">
+  <!-- PANTALLA DE INGRESO (nombre del jugador) -->
+  <div id="loginScreen">
+    <div class="login-box">
+      <h2 id="loginTitulo">¿CÓMO TE LLAMÁS?</h2>
+      <p id="loginSaludo"></p>
+      <input id="loginNombre" type="text" maxlength="20" placeholder="Tu nombre" autocomplete="off">
+      <button id="loginBtn" onclick="entrarJugador()">ENTRAR</button>
+      <button id="loginOtro" onclick="cambiarJugador()" style="display:none;">No soy yo</button>
+      <small>Tu nombre queda registrado cuando entrás al juego.</small>
+    </div>
+  </div>
+
+    <section class="screen active" data-index="0">
+      <h1 class="main-title">Five Nights of Darkness</h1>
+      <div class="menu-buttons">
+        <button disabled>Anterior</button>
+        <button onclick="nextScreen()">Siguiente</button>
+      </div>
+    </section>
+
+    <section class="screen" data-index="1">
+      <h1 class="title">HISTORIA</h1>
+      <div class="content-text">
+         Una noche de tormenta, cinco asesinos que huían de la policía irrumpieron buscando refugio. La lluvia golpeaba las chapas, el viento se colaba por la ventana abierta y el taller ardía con el brillo del metal fundido. El dueño los observó en silencio: no quería problemas con la policía, ni interrogatorios, ni titulares que arruinaran su sueño.
+Los atrapó uno por uno. Y tomó una decisión que no dejara rastro: mezcló sus cuerpos en el metal fundido, para que no quedara prueba alguna. Cada vertida selló un secreto; cada chispa, un pacto sin retorno.
+Cuando el negocio abrió sus puertas, los animatrónicos estaban listos para entretener. Pero en sus ojos brillaba algo que no venía de ningún circuito: la presencia de cinco criminales atrapados en hierro y cables, esperando la noche adecuada para cobrar su deuda.
+Desde entonces, cada función no era un espectáculo… era una trampa, y cada noche el público se convertía en parte de su venganza.
+
+
+      </div>
+      <div class="menu-buttons">
+        <button onclick="prevScreen()">Anterior</button>
+        <button onclick="nextScreen()">Siguiente</button>
+      </div>
+    </section>
+
+    <section class="screen" data-index="2">
+      <h1 class="title">AETHROS</h1>
+      <div class="animatronic-info">
+        <img src="https://github.com/tonyjam87-APP/FNOD-1/blob/main/Animatr%C3%B3nico%20de%20Panda.png?raw=true" class="animatronic-img-menu">
+        <div class="content-text">
+          <p><strong>Origen del nombre:</strong> Proviene del griego <em>aithēr</em> (éter), simbolizando el equilibrio roto entre luz y oscuridad.</p>
+          <p><strong>Altura:</strong> 2,2 m</p>
+          <p><strong>Peso:</strong> 250 kg</p>
+          <p><strong>Mecánica:</strong> Ataca solo por la puerta izquierda, avanzando lento pero inevitable.</p>
+          <p><strong>Advertencia:</strong> Cerrar la puerta izquierda será tu única salvación.</p>
+          <p><em>"Aethros encarna el equilibrio roto, donde la luz y la oscuridad se enfrentan sin tregua."</em></p>
+        </div>
+      </div>
+      <div class="menu-buttons">
+        <button onclick="prevScreen()">Anterior</button>
+        <button onclick="nextScreen()">Siguiente</button>
+      </div>
+    </section>
+
+<section class="screen" data-index="3">
+  <h1 class="title">RAZORCLAW</h1>
+  <div class="animatronic-info">
+    <img src="https://github.com/tonyjam87-APP/FNOD-1/blob/main/Animatr%C3%B3nico%20de%20Tigre.png?raw=true" 
+         alt="Animatrónico Tigre" class="animatronic-img-menu">
+    <div class="content-text">
+      <p><strong>Origen del nombre:</strong> En inglés significa “garra afilada”, reflejando su naturaleza de cazador brutal y preciso.</p>
+      <p><strong>Altura:</strong> 1,8 m</p>
+      <p><strong>Peso:</strong> 120 kg</p>
+      <p><strong>Mecánica:</strong> Ataca solo por la puerta derecha, con emboscadas rápidas y brutales.</p>
+      <p><strong>Advertencia:</strong> Cerrar la puerta derecha es lo único que te mantendrá con vida.</p>
+      <p><em>"Razorclaw acecha en silencio, y cuando ataca, la ferocidad no deja escapatoria."</em></p>
+    </div>
+  </div>
+  <div class="menu-buttons">
+    <button onclick="prevScreen()">Anterior</button>
+    <button onclick="nextScreen()">Siguiente</button>
+  </div>
+</section>
+
+<section class="screen" data-index="4">
+  <h1 class="title">OPHIS</h1>
+  <div class="animatronic-info">
+    <img src="https://github.com/tonyjam87-APP/FNOD-1/blob/main/Animatr%C3%B3nico%20de%20Cobra.png?raw=true" 
+         alt="Animatrónico Cobra" class="animatronic-img-menu">
+    <div class="content-text">
+      <p><strong>Origen del nombre:</strong> Del griego <em>ophis</em> (serpiente), encarna el veneno y el silencio eterno.</p>
+      <p><strong>Largo:</strong> 1,6 m</p>
+      <p><strong>Peso:</strong> 35 kg</p>
+      <p><strong>Mecánica:</strong> Siempre visible en cámaras, presiona con su presencia constante y siseos inquietantes. Ataca solo por el ducto izquierdo.</p>
+      <p><strong>Advertencia:</strong> Ignorarla demasiado tiempo es invitar al veneno. Encender la luz será tu única defensa para protegerte.</p>
+      <p><em>"Ophis vigila sin descanso; su veneno es la amenaza que nunca desaparece."</em></p>
+    </div>
+  </div>
+  <div class="menu-buttons">
+    <button onclick="prevScreen()">Anterior</button>
+    <button onclick="nextScreen()">Siguiente</button>
+  </div>
+</section>
+
+<!-- 6. MORWEN -->
+<section class="screen" data-index="5">
+  <h1 class="title">MORWEN</h1>
+  <div class="animatronic-info">
+    <img src="https://github.com/tonyjam87-APP/FNOD-1/blob/main/Animatr%C3%B3nico%20de%20Ara%C3%B1a.png?raw=true" 
+         alt="Animatrónico Araña" class="animatronic-img-menu">
+    <div class="content-text">
+      <p><strong>Origen del nombre:</strong> De raíces góticas: <em>mor</em> (oscuridad) y <em>wen</em> (destino), la que teje la fatalidad en las sombras.</p>
+      <p><strong>Altura:</strong> 0,5 m</p>
+      <p><strong>Peso:</strong> 40 kg</p>
+      <p><strong>Mecánica:</strong> Se mueve silenciosa por los ductos superiores, presionando con su presencia constante. Ataca solo por el ducto derecho.</p>
+      <p><strong>Advertencia:</strong> Ignorarla demasiado tiempo es invitar al terror. Solo encender la luz la espantará.</p>
+      <p><em>"Morwen teje su red en la oscuridad, y cuando desciende, la esperanza se convierte en miedo."</em></p>
+    </div>
+  </div>
+  <div class="menu-buttons">
+    <button onclick="prevScreen()">Anterior</button>
+    <button onclick="nextScreen()">Siguiente</button>
+  </div>
+</section>
+
+<!-- 7. NOX -->
+<section class="screen" data-index="6">
+  <h1 class="title">NOX</h1>
+  <div class="animatronic-info">
+    <img src="https://github.com/tonyjam87-APP/FNOD-1/blob/main/Animatr%C3%B3nico%20Cuervo%20.png?raw=true" 
+         alt="Animatrónico Cuervo" class="animatronic-img-menu">
+    <div class="content-text">
+      <p><strong>Origen del nombre:</strong> Del latín <em>nox</em> (noche), mensajero de la desaparición y dueño de la oscuridad.</p>
+      <p><strong>Altura:</strong> 0.50 m</p>
+      <p><strong>Peso:</strong> 20 kg</p>
+      <p><strong>Mecánica:</strong> Aparece en la oficina, bloqueando puertas y luces por 6 segundos, dejándote indefenso.</p>
+      <p><strong>Advertencia:</strong> Cuando Nox entra, no hay defensa: solo resistir su dominio hasta que se retire.</p>
+      <p><em>"Nox anuncia la caída de la luz, y con su graznido la oscuridad reclama dominio."</em></p>
+    </div>
+  </div>
+  <div class="menu-buttons">
+    <button onclick="prevScreen()">Anterior</button>
+    <button onclick="nextScreen()">Siguiente</button>
+  </div>
+</section>
+
+<!-- 7. NOX2 -->
+<section class="screen" data-index="7">
+  <h1 class="title">NOX, Forma Final</h1>
+  <div class="animatronic-info">
+    <img src="https://github.com/tonyjam87-APP/FNOD-1/blob/main/Animatr%C3%B3nico%20Cuervo%20de%20Pie.png?raw=true" 
+         alt="Animatrónico Cuervo - Forma Completa" class="animatronic-img-menu" style="filter: brightness(0.5) contrast(1.2);">
+    <div class="content-text">
+      <p><strong>Origen del nombre:</strong> Del latín <em>nox</em> (noche). Lo que antes anunciaba la oscuridad, ahora la encarna por completo.</p>
+      <p><strong>Altura:</strong> Desconocido</p>
+      <p><strong>Peso:</strong> Desconocido</p>
+      <p><strong>Mecánica:</strong> Nox aparece de cuerpo presente en la oficina. Durante su manifestación, no podrás encender luces, cambiar de cámara ni cerrar puertas.</p>
+      <p><strong>Advertencia:</strong> Si intentas realizar cualquier acción durante su aparición, Nox te atacará de inmediato. La única forma de sobrevivir es no hacer nada y esperar.</p>
+      <p style="font-style: italic; color: #777;">"Antes bloqueaba la luz. Ahora es la oscuridad la que te observa."</p>
+    </div>
+  </div>
+  <div class="menu-buttons">
+    <button onclick="prevScreen()">Anterior</button>
+    <button onclick="nextScreen()">Siguiente</button>
+  </div>
+</section>
+
+<!-- 8. Instrucciones -->
+<section class="screen" data-index="8">
+  <h1 class="title">Instrucciones</h1>
+  <div class="content-text">
+    <p><strong>Objetivo:</strong> Sobrevivir cada noche evitando que los animatrónicos lleguen a la oficina.</p>
+    <p><strong>Controles:</strong></p>
+    <ul>
+      <li>Cámaras: vigilá salas y pasillos.</li>
+      <li>Puertas: cerralas solo ante peligro.</li>
+      <li>Luces: encendelas para confirmar presencia.</li>
+      <li>Energía: administrá el consumo; si se agota, quedás indefenso.</li>
+    </ul>
+    <p><strong>Advertencias:</strong> Movimiento impredecible, patrones aleatorios de ataque.</p>
+    <p><strong>Consejos:</strong> Alterná cámaras/luces, no gastes energía de más, mantené la calma.</p>
+  </div>
+  <div class="menu-buttons">
+    <button onclick="prevScreen()">Anterior</button>
+    <button onclick="nextScreen()">Siguiente</button>
+  </div>
+</section>
+
+    <section class="screen" data-index="9">
+      <h1 class="night-title">NOCHE 1</h1>
+      <div class="menu-buttons">
+        <button onclick="prevScreen()">Anterior</button>
+        <button id="mainStartBtn" onclick="iniciarJuegoCompleto()" disabled>CARGANDO...</button>
+      </div>
+    </section>
+
+    <div id="game-interface">
+      <div id="hud">
+        Hora: <span id="hora">12 AM</span> | Energía: <span id="energia">100%</span>
+        <div id="energiaBarWrap"><div id="energiaBar"></div></div>
+        <button id="btnMute" onclick="toggleMute()" title="Silenciar/Activar sonido">🔊</button>
+      </div>
+
+      <div id="camaras" style="display: flex;">
+        <div id="camLabel">CAM 01</div>
+        <div id="camContainer">
+          <img id="camImage" src="https://github.com/tonyjam87-APP/FNOD-1/blob/main/Pasillo%20Izquierdo.png?raw=true">
+          <img id="panda" class="entidad-img" src="https://github.com/tonyjam87-APP/FNOD-1/blob/main/Animatr%C3%B3nico%20de%20Panda.png?raw=true">
+          <img id="tigre" class="entidad-img" src="https://github.com/tonyjam87-APP/FNOD-1/blob/main/Animatr%C3%B3nico%20de%20Tigre.png?raw=true">
+          <img id="arañaCam" class="entidad-img" src="https://github.com/tonyjam87-APP/FNOD-1/blob/main/Animatr%C3%B3nico%20de%20Ara%C3%B1a.png?raw=true">
+          <img id="ophisCam" class="entidad-img" src="https://github.com/tonyjam87-APP/FNOD-1/blob/main/Animatr%C3%B3nico%20de%20Cobra.png?raw=true">
+        </div>
+
+<div id="mapaContainer">
+  <img src="https://github.com/tonyjam87-APP/FNOD-1/blob/main/image.png?raw=true">
+  
+  <button class="cam-btn-mapa" id="btnCam01" onclick="setCam('cam01')">1</button>
+  <button class="cam-btn-mapa" id="btnCam02" onclick="setCam('cam02')">2</button>
+  <button class="cam-btn-mapa" id="btnCam03" onclick="setCam('cam03')">3</button>
+  <button class="cam-btn-mapa" id="btnCam04" onclick="setCam('cam04')">4</button>
+  <button class="cam-btn-mapa" id="btnCam05" onclick="setCam('cam05')">5</button>
+  <button class="cam-btn-mapa" id="btnCam06" onclick="setCam('cam06')">6</button>
+  <button class="cam-btn-mapa" id="btnCam07" onclick="setCam('cam07')">7</button>
+  <button class="cam-btn-mapa" id="btnCam08" onclick="setCam('cam08')">8</button>
+  <button class="cam-btn-mapa" id="btnCam09" onclick="setCam('cam09')">9</button>
+</div>
+</div>
+
+<div id="oficina">
+  <img id="poster" src="https://github.com/tonyjam87-APP/FNOD-1/blob/main/Poster.png?raw=true">
+  <button id="posterBtn" onclick="honk()"></button>
+
+<div id="cuervo-de-pie-office">
+  <img id="img-cuervo-de-pie" src="">
+</div>
+
+  <img id="cuervoIzq" class="entidad-img" src="https://github.com/tonyjam87-APP/FNOD-1/blob/main/Animatr%C3%B3nico%20Cuervo%20.png?raw=true">
+  <img id="cuervoDer" class="entidad-img" src="https://github.com/tonyjam87-APP/FNOD-1/blob/main/Animatr%C3%B3nico%20Cuervo%20.png?raw=true">
+
+  <!-- Ophis en oficina  -->
+
+<img id="ophisOficina" class="entidad-img" src="https://github.com/tonyjam87-APP/FNOD-1/blob/main/Animatr%C3%B3nico%20de%20cobra%20Ducto.png?raw=true">
+<img id="arañaOficina" class="entidad-img" src="https://github.com/tonyjam87-APP/FNOD-1/blob/main/Animatr%C3%B3nico%20de%20Ara%C3%B1a.png?raw=true">
+
+  <div id="puertaIzq" class="puerta"></div>
+  <div id="puertaDer" class="puerta"></div>
+  <div id="overlayIzq" class="overlay"></div>
+  <div id="overlayDer" class="overlay"></div>
+
+  <button id="btnPuertaIzq" class="boton-game" onclick="togglePuerta('Izq')">Puerta I</button>
+  <button id="btnLuzIzq" class="boton-game" onclick="toggleLuz('Izq')">Luz I</button>
+  <button id="btnPuertaDer" class="boton-game" onclick="togglePuerta('Der')">Puerta D</button>
+  <button id="btnLuzDer" class="boton-game" onclick="toggleLuz('Der')">Luz D</button>
+</div>
+    </div>
+  </div>
+
+<div id="victoryScreen" style="display:none;">
+  <h1 id="victoryHour" style="font-size:80px;">6:00 AM</h1>
+  <p id="victoryMessage" style="font-size:24px; color:red;"></p>
+
+  <!-- Botón correcto -->
+  <button id="retryBtn" onclick="volverANoche1()" style="display:none; padding:10px; margin-top:20px; cursor:pointer;">
+    Reintentar Noche 1
+  </button>
+</div>
+
+<div id="jumpscareOverlay" style="display:none;">
+  <video id="jumpscareVideo" playsinline preload="auto"></video>
+</div>
+
+<!-- CRÉDITOS -->
+<div id="creditsScreen">
+  <div class="credits-container">
+
+    <h1>CRÉDITOS</h1>
+
+    <p><strong>Desarrollador</strong><br>
+    Jesús Melgarejo</p>
+
+    <p><strong>Con la ayuda de</strong><br>
+    Benjamín (8 años)</p>
+
+    <p><strong>Diseño y Concepto</strong><br>
+    Five Nights of Darkness</p>
+
+    <p><strong>Programación</strong><br>
+    HTML · CSS · JavaScript</p>
+
+    <p><strong>Sonidos</strong><br>
+    Efectos personalizados y recursos libres</p>
+
+    <p><strong>Inspiración</strong><br>
+    Five Nights at Freddy's</p>
+
+    <p class="fin">UN PROYECTO HECHO EN FAMILIA</p>
+
+  </div>
+
+  <!-- 🔥 BOTÓN AFUERA -->
+  <button id="btnCreditos" onclick="location.reload()">VOLVER AL MENÚ</button>
+</div>
+
+  <script>
+
+    /* --- INGRESO DEL JUGADOR (se anota en la planilla por Make) --- */
+    const WEBHOOK_MAKE = "https://hook.us2.make.com/llo6qhd5yw98h0ckd18bae2ocy2uhxnn";   // link del webhook de Make
+    const NOMBRE_JUEGO = "FNOD 1";
+    let jugador = "";
+    function leerGuardado(){ try { return localStorage.getItem("fnod_jugador") || ""; } catch(e) { return ""; } }
+    function guardarNombre(n){ try { localStorage.setItem("fnod_jugador", n); } catch(e) {} }
+    (function prepararLogin(){
+      const previo = leerGuardado();
+      if (previo) {
+        document.getElementById("loginTitulo").textContent = "VOLVISTE, " + previo.toUpperCase();
+        document.getElementById("loginSaludo").textContent = "Ellos te estaban esperando...";
+        document.getElementById("loginNombre").style.display = "none";
+        document.getElementById("loginOtro").style.display = "inline";
+      }
+      document.getElementById("loginNombre").addEventListener("keydown", e => { if (e.key === "Enter") entrarJugador(); });
+    })();
+    function cambiarJugador(){
+      document.getElementById("loginTitulo").textContent = "¿CÓMO TE LLAMÁS?";
+      document.getElementById("loginSaludo").textContent = "";
+      document.getElementById("loginNombre").style.display = "inline-block";
+      document.getElementById("loginNombre").value = "";
+      document.getElementById("loginNombre").focus();
+      document.getElementById("loginOtro").style.display = "none";
+    }
+    function registrarEntrada(nombre){
+      if (!WEBHOOK_MAKE) return;
+      const ahora = new Date();
+      const dos = n => String(n).padStart(2, "0");
+      const datos = new URLSearchParams({
+        usuario: nombre,
+        fecha: dos(ahora.getDate()) + "/" + dos(ahora.getMonth() + 1) + "/" + ahora.getFullYear(),
+        hora: dos(ahora.getHours()) + ":" + dos(ahora.getMinutes()),
+        juego: NOMBRE_JUEGO
+      });
+      fetch(WEBHOOK_MAKE + (WEBHOOK_MAKE.includes("?") ? "&" : "?") + datos.toString(), { mode: "no-cors" }).catch(() => {});
+    }
+    function entrarJugador(){
+      const campo = document.getElementById("loginNombre");
+      let nombre = campo.style.display === "none" ? leerGuardado() : campo.value.trim();
+      if (!nombre) { campo.focus(); campo.style.borderColor = "#f00"; return; }
+      jugador = nombre;
+      guardarNombre(nombre);
+      registrarEntrada(nombre);
+      document.getElementById("loginTitulo").textContent = "BIENVENIDO, " + nombre.toUpperCase();
+      document.getElementById("loginSaludo").textContent = "...si te atrevés.";
+      campo.style.display = "none";
+      document.getElementById("loginBtn").style.display = "none";
+      document.getElementById("loginOtro").style.display = "none";
+      setTimeout(() => { document.getElementById("loginScreen").style.display = "none"; }, 1800);
+    }
+    /* --- LÓGICA DE NAVEGACIÓN DE MENÚS --- */
+    let currentScreen = 0;
+    const screens = document.querySelectorAll(".screen");
+
+    function showScreen(index){
+      screens.forEach(s => s.classList.remove("active"));
+      screens[index].classList.add("active");
+    }
+    function nextScreen(){
+      // si volviste al menú principal y tocás Siguiente, la canción arranca de nuevo
+      if (currentScreen === 0 && musicaTerminada) {
+        musicaTerminada = false;
+        musicaMenu.volume = 0.7; musicaMenu.currentTime = 0;
+        musicaMenu.play().catch(() => {});
+      }
+      if(currentScreen < screens.length - 1){ currentScreen++; showScreen(currentScreen); }
+    }
+    function prevScreen(){ if(currentScreen > 0){ currentScreen--; showScreen(currentScreen); } }
+
+    const REPO = "https://raw.githubusercontent.com/tonyjam87-APP/FNOD-1/main/";
+
+    /* --- SONIDOS --- */
+    const sonidos = {
+      aparicionCuervo: REPO + "Cuervo%20grande.mp3",
+      avisoCuervo: REPO + "CUERVO%20GRANDE%20CAMINANDO.mp3",
+      cuervo: REPO + "CUERVO.mp3",
+      puertaAbierta: REPO + "Puerta%20Abierta.mp3",
+      puertaCerrada: REPO + "Puerta%20Cerrada.mp3",
+      luzON: REPO + "Luz%20ON.mp3",
+      luzOFF: REPO + "Luz%20OFF.mp3",
+      alarma: REPO + "Alarma%20del%20reloj.mp3"
+    };
+    const audioCache = {};
+
+    /* --- VIDEOS DE JUMPSCARE (se descargan completos en la precarga) --- */
+    const jsVideos = {
+      "AETHROS":   REPO + "Jumpscare%20Aethros.mp4",
+      "RAZORCLAW": REPO + "Jumpscare%20Razorclaw.mp4",
+      "OPHIS":     REPO + "Jumpscare%20Ophis.mp4",
+      "MORWEN":    REPO + "Jumpscare%20Morwen.mp4",
+      "NOX":       REPO + "Jumpscare%20Nox.mp4"
+    };
+    const videoCache = {};
+
+    const camUrls = {
+      cam01: REPO + "Pasillo%20Izquierdo.png",
+      cam02: REPO + "Sala%20de%20Mantenimiento.png",
+      cam03: REPO + "Restaurant.png",
+      cam04: REPO + "Zona%20de%20Servicios.png",
+      cam05: REPO + "Cocina.png",
+      cam06: REPO + "Ba%C3%B1o.png",
+      cam07: REPO + "Escenario.png",
+      cam08: REPO + "Pasillo%20Derecho.png",
+      cam09: REPO + "Sala%20de%20Juegos.png"
+    };
+    const URL_CUERVO_PIE = REPO + "Animatr%C3%B3nico%20Cuervo%20de%20Pie.png";
+
+    /* --- MÚSICA DEL MENÚ (suena desde el primer toque hasta que arranca la noche) --- */
+    const musicaMenu = new Audio(REPO + "CANCION.mp3");
+    musicaMenu.loop = true; musicaMenu.preload = "auto"; musicaMenu.volume = 0.7;
+    let musicaTerminada = false;
+    function arrancarMusica(){
+      if (musicaTerminada || gameStarted) return;
+      if (musicaMenu.paused) musicaMenu.play().catch(() => {});
+    }
+    document.addEventListener("click", arrancarMusica);
+    document.addEventListener("keydown", arrancarMusica);
+    function apagarMusica(){
+      if (musicaTerminada) return;
+      musicaTerminada = true;
+      const v0 = musicaMenu.volume; let paso = 0;
+      const f = setInterval(() => {
+        paso++; musicaMenu.volume = Math.max(0, v0 * (1 - paso / 15));
+        if (paso >= 15) { clearInterval(f); musicaMenu.pause(); }
+      }, 100);
+    }
+
+    /* --- PRECARGA: no se puede jugar hasta que cargue todo --- */
+    window.onload = () => {
+      // todas las imágenes que usa el juego (las de la página, las cámaras y el cuervo de pie)
+      const urls = new Set();
+      document.querySelectorAll("img[src]").forEach(i => { if (i.getAttribute("src")) urls.add(i.src); });
+      Object.values(camUrls).forEach(u => urls.add(u));
+      urls.add(URL_CUERVO_PIE);
+      urls.add(REPO + "Oficina.png");
+
+      const total = urls.size + Object.keys(sonidos).length + Object.keys(jsVideos).length + 1; // +1 = canción
+      let cargados = 0, fallas = 0;
+      const faltan = [];
+      const btn = document.getElementById("mainStartBtn");
+
+      function actualizarBoton(){
+        if (fallas > 0 && cargados + fallas >= total) {
+          btn.disabled = false;
+          btn.innerText = "ERROR AL CARGAR - TOCÁ PARA REINTENTAR";
+          btn.title = "No cargó: " + faltan.join(", ");
+          console.log("No cargaron:", faltan);
+          btn.onclick = () => location.reload();
+          return;
+        }
+        btn.innerText = `CARGANDO... (${Math.floor((cargados/total)*100)}%)`;
+        if (cargados >= total) { btn.disabled = false; btn.innerText = "A JUGAR"; }
+      }
+      const ok = () => { cargados++; actualizarBoton(); };
+      const mal = (u) => { fallas++; faltan.push(decodeURIComponent(String(u).split("/").pop().split("?")[0])); actualizarBoton(); };
+
+      urls.forEach(u => {
+        const im = new Image();
+        im.onload = ok; im.onerror = () => mal(u);
+        im.src = u;
+      });
+
+      for (let key in sonidos) {
+        const audio = new Audio();
+        audio.src = sonidos[key];
+        audioCache[key] = audio;
+        audio.muted = muteado;
+        audio.addEventListener('canplaythrough', ok, { once: true });
+        audio.addEventListener('error', () => mal(sonidos[key]), { once: true });
+        audio.load();
+      }
+
+      musicaMenu.addEventListener('canplaythrough', ok, { once: true });
+      musicaMenu.addEventListener('error', () => mal("CANCION.mp3"), { once: true });
+      musicaMenu.load();
+
+      // los videos se bajan enteros (hasta 3 intentos cada uno) y quedan guardados en memoria
+      for (let nombre in jsVideos) {
+        const bajar = (intento) => fetch(jsVideos[nombre])
+          .then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+          .then(buf => { videoCache[nombre] = URL.createObjectURL(new Blob([buf], { type: "video/mp4" })); ok(); })
+          .catch(() => { if (intento < 3) setTimeout(() => bajar(intento + 1), 1500); else mal(jsVideos[nombre]); });
+        bajar(1);
+      }
+    };
+
+    // --- MUTE / SONIDO ---
+    let muteado = false;
+    function toggleMute() {
+      muteado = !muteado;
+      for (let key in audioCache) audioCache[key].muted = muteado;
+      const btn = document.getElementById("btnMute");
+      if (btn) btn.textContent = muteado ? "🔇" : "🔊";
+    }
+
+    /* --- MOTOR DEL JUEGO --- */
+    // MODO FIJO (para acomodar): los animatrónicos quedan quietos y se ven en todas las cámaras
+    // por las que pasan, sin ataques ni gasto de energía. Volver a false para jugar normal.
+    const MODO_FIJO = false;
+
+    // Posición de cada animatrónico en cada cámara: [izquierda %, arriba %, ancho %]
+    const posCam = {
+      cam01: { panda:[40,45,25] },
+      cam02: { panda:[4,45,22],  tigre:[27,34,22], ophis:[50,55,24], morwen:[76,4,16] },
+      cam03: { panda:[4,55,22],  tigre:[27,54,22], ophis:[50,47,24], morwen:[76,4,16] },
+      cam04: { panda:[72,56,22], tigre:[20,49,25], ophis:[46,66,22], morwen:[74,1,18] },
+      cam05: { panda:[4,36,22],  tigre:[45,44,22], ophis:[50,55,24], morwen:[76,4,16] },
+      cam06: { panda:[37,42,27], tigre:[37,42,27], ophis:[37,56,27], morwen:[72,2,16] },
+      cam07: { panda:[4,41,22],  tigre:[27,40,22], ophis:[50,50,24], morwen:[76,4,16] },
+      cam08: { tigre:[40,43,25] },
+      cam09: { panda:[8,45,24],  tigre:[38,34,24], ophis:[66,55,26], morwen:[74,2,16] }
+    };
+    const idCam = { panda:"panda", tigre:"tigre", ophis:"ophisCam", morwen:"arañaCam" };
+    function ubicar(q, cam){
+      const d = posCam[cam] && posCam[cam][q]; if (!d) return false;
+      const el = document.getElementById(idCam[q]);
+      el.style.left = d[0] + "%"; el.style.top = d[1] + "%"; el.style.width = d[2] + "%"; el.style.right = "auto";
+      el.style.display = "block";
+      return true;
+    }
+
+    const DURACION_HORA = 60000;
+    let nocheActual = 1;
+    let energia = 100, hora = 0, gameStarted = false, currentCam = 'cam01';
+    let pausadoPorRotacion = false;
+    let pandaPos = null, tigrePos = null, arañaPos = null, ophisPos = null;
+    let bloqueoIzq = false, bloqueoDer = false;
+    let partida = 0;      // para que los temporizadores de una partida vieja no afecten la nueva
+    let tiempoHora = 0;
+    let probCuervo = 0.7;
+    window.gameIntervals = [];
+
+    // --- PANTALLA COMPLETA AUTOMÁTICA (PC Y CELULAR) ---
+    function activarPantallaCompleta(){
+      const el = document.documentElement;
+      const request = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+      if (request) { try { const p = request.call(el); if (p && p.catch) p.catch(() => {}); } catch (e) {} }
+      if (screen.orientation && screen.orientation.lock) { screen.orientation.lock('landscape').catch(() => {}); }
+    }
+
+    // --- PAUSA AUTOMÁTICA MIENTRAS SE MUESTRA EL AVISO DE GIRAR EL CELULAR ---
+    const mqGirar = window.matchMedia('(max-width: 900px) and (orientation: portrait)');
+    function actualizarPausaPorRotacion(e) { pausadoPorRotacion = e.matches; }
+    actualizarPausaPorRotacion(mqGirar);
+    if (mqGirar.addEventListener) mqGirar.addEventListener('change', actualizarPausaPorRotacion);
+    else if (mqGirar.addListener) mqGirar.addListener(actualizarPausaPorRotacion);
+
+    document.addEventListener('click', function(){
+      if (!document.fullscreenElement && !document.webkitFullscreenElement) activarPantallaCompleta();
+    });
+
+    /* --- TEMPORIZADOR QUE SE PAUSA AL GIRAR EL CELULAR ---
+       Igual que setTimeout, pero no cuenta el tiempo mientras el celular está vertical. */
+    function esperar(fn, ms){
+      let resta = ms;
+      const id = setInterval(() => {
+        if (!pausadoPorRotacion) resta -= 100;
+        if (resta <= 0) { clearInterval(id); fn(); }
+      }, 100);
+      return id;
+    }
+
+    function iniciarJuegoCompleto(){
+      apagarMusica();
+      activarPantallaCompleta();
+
+      for (let key in audioCache) {
+        audioCache[key].play().then(() => { audioCache[key].pause(); audioCache[key].currentTime = 0; }).catch(() => {});
+      }
+
+      screens.forEach(s => s.classList.remove("active"));
+      document.getElementById("hud").style.display = "block";
+      document.getElementById('mapaContainer').style.display = 'block';
+
+      gameStarted = true;
+      partida++;
+      if (window.gameIntervals) window.gameIntervals.forEach(clearInterval);
+
+      if (MODO_FIJO) {
+        // todo quieto y visible para acomodar posiciones (puertas abiertas)
+        document.getElementById("puertaIzq").classList.remove("cerrada");
+        document.getElementById("puertaDer").classList.remove("cerrada");
+        const capa = document.getElementById("cuervo-de-pie-office");
+        document.getElementById("img-cuervo-de-pie").src = URL_CUERVO_PIE;
+        capa.style.display = "flex";
+        actualizarVisuales();
+        return;
+      }
+
+      // --- VELOCIDADES POR NOCHE (las mismas del 2) ---
+      let vPanda, vTigre, vDucto;
+      if (nocheActual === 1)      { vPanda = 25000; vTigre = 30000; vDucto = 35000; probCuervo = 0.7; }
+      else if (nocheActual === 2) { vPanda = 18000; vTigre = 22000; vDucto = 25000; probCuervo = 0.5; }
+      else if (nocheActual === 3) { vPanda = 13000; vTigre = 16000; vDucto = 19000; probCuervo = 0.4; }
+      else if (nocheActual === 4) { vPanda = 10000; vTigre = 11000; vDucto = 12000; probCuervo = 0.3; }
+      else if (nocheActual === 5) { vPanda = 8000;  vTigre = 8000;  vDucto = 8000;  probCuervo = 0.1; }
+      else                        { vPanda = 8000;  vTigre = 8000;  vDucto = 8000;  probCuervo = 0.1; } // noche 6
+
+      // cada animatrónico arranca la noche con un patrón al azar
+      pandaPos = tigrePos = arañaPos = ophisPos = null;
+      ["panda","tigre","ophis","morwen"].forEach(q => { estado[q].atacando = false; reiniciarPatron(q); });
+      tiempoHora = 0;
+      aparicionesCuervoNoche6 = 0; cuervoFormaCompletaAcechando = false; noxEnCamino = false;
+      actualizarVisuales();
+
+      window.gameIntervals = [
+        setInterval(() => { if (!gameStarted || pausadoPorRotacion) return; tiempoHora += 1000; if (tiempoHora >= DURACION_HORA) { tiempoHora = 0; avanzarHora(); } }, 1000),
+        setInterval(() => avanzar("panda"), vPanda),
+        setInterval(() => avanzar("tigre"), vTigre),
+        setInterval(() => { avanzar("ophis"); avanzar("morwen"); }, vDucto),
+        setInterval(() => { if (!gameStarted || pausadoPorRotacion) return; usarEnergia(1); }, 8000),
+        setInterval(() => {
+          if (gameStarted && !pausadoPorRotacion && Math.random() > probCuervo) mostrarCuervo(Math.random() > 0.5 ? "Izq" : "Der");
+        }, 20000),
+        // Nox, forma final: solo en la noche 6 (al menos 3 apariciones, después al azar)
+        setInterval(() => {
+          if (!gameStarted || pausadoPorRotacion || nocheActual !== 6 || cuervoFormaCompletaAcechando || noxEnCamino) return;
+          if (aparicionesCuervoNoche6 < 3 || Math.random() < 0.20) invocarCuervoFormaCompleta();
+        }, 12000)
+      ];
+    }
+
+    /* --- PATRONES DE MOVIMIENTO ---
+       A = 5 cámaras (repite una para confundir), B = 4, C = 3. El último paso es el lugar de ataque. */
+    const patrones = {
+      panda:  { A:["cam09","cam07","cam04","cam07","cam06","cam01"], B:["cam05","cam02","cam03","cam06","cam01"], C:["cam02","cam03","cam06","cam01"] },
+      tigre:  { A:["cam09","cam07","cam03","cam07","cam04","cam08"], B:["cam06","cam02","cam04","cam05","cam08"], C:["cam03","cam02","cam05","cam08"] },
+      ophis:  { A:["cam04","cam03","cam06","cam02","cam06","ductoL"], B:["cam05","cam07","cam06","cam09","ductoL"], C:["cam05","cam07","cam09","ductoL"] },
+      morwen: { A:["cam09","cam07","cam03","cam07","cam04","ductoR"], B:["cam06","cam03","cam02","cam05","ductoR"], C:["cam02","cam03","cam05","ductoR"] }
+    };
+    const estado = {
+      panda: { patron:"A", paso:0, atacando:false }, tigre: { patron:"A", paso:0, atacando:false },
+      ophis: { patron:"A", paso:0, atacando:false }, morwen: { patron:"A", paso:0, atacando:false }
+    };
+
+    function getPos(q){ return q==="panda"?pandaPos : q==="tigre"?tigrePos : q==="ophis"?ophisPos : arañaPos; }
+    function setPos(q,v){ if(q==="panda") pandaPos=v; else if(q==="tigre") tigrePos=v; else if(q==="ophis") ophisPos=v; else arañaPos=v; }
+    function ocupada(camara, menos) { return ["panda","tigre","ophis","morwen"].some(q => q !== menos && getPos(q) === camara); }
+
+    // elige un patrón al azar y se ubica en su primera cámara (si está ocupada, en la 2ª del patrón largo)
+    function reiniciarPatron(q){
+      const e = estado[q];
+      e.atacando = false;
+      const opciones = ["A","B","C"].sort(() => Math.random() - 0.5);
+      for (const pat of opciones) {
+        const inicio = patrones[q][pat][0];
+        if (!ocupada(inicio, q)) { e.patron = pat; e.paso = 0; setPos(q, inicio); return; }
+      }
+      const plan = patrones[q].A[1];
+      if (!ocupada(plan, q)) { e.patron = "A"; e.paso = 1; setPos(q, plan); return; }
+      e.patron = "A"; e.paso = -1; setPos(q, null);   // todo ocupado: espera fuera de cámara
+    }
+
+    function avanzar(q){
+      if(!gameStarted || pausadoPorRotacion) return;
+      const e = estado[q];
+      if (e.atacando) return;
+      if (getPos(q) === null) { reiniciarPatron(q); actualizarVisuales(); return; }
+
+      const ruta = patrones[q][e.patron];
+      let destino = ruta[e.paso + 1];
+      if (destino && ocupada(destino, q)) {
+        // la cámara a la que iba está ocupada: salta a la 2ª cámara del patrón más largo
+        const alt = patrones[q].A[1];
+        if (!ocupada(alt, q) && getPos(q) !== alt) { e.patron = "A"; e.paso = 1; e.trabado = 0; setPos(q, alt); actualizarVisuales(); return; }
+        // también ocupada: espera; si queda trabado 2 turnos, saltea esa cámara o arranca otro patrón
+        e.trabado = (e.trabado || 0) + 1;
+        if (e.trabado < 2) return;
+        e.trabado = 0;
+        const siguiente = ruta[e.paso + 2];
+        if (siguiente && e.paso + 2 < ruta.length - 1 && !ocupada(siguiente, q)) { e.paso += 1; destino = siguiente; }
+        else { reiniciarPatron(q); actualizarVisuales(); return; }
+      }
+      e.trabado = 0;
+      e.paso++;
+      setPos(q, destino);
+      actualizarVisuales();
+      if (e.paso === ruta.length - 1) atacar(q);
+    }
+
+    function sonar(clave){
+      const a = audioCache[clave];
+      if (a) { a.currentTime = 0; a.play().catch(() => {}); }
+    }
+
+    // llegó al lugar de ataque: 5 segundos para defenderse
+    function atacar(q){
+      const e = estado[q]; e.atacando = true;
+      const miPartida = partida;
+      if (q === "panda" || q === "tigre") {
+        const puerta = (q === "panda") ? "puertaIzq" : "puertaDer";
+        esperar(() => {
+          if(!gameStarted || miPartida !== partida) return;
+          if(!document.getElementById(puerta).classList.contains("cerrada")) morir(q === "panda" ? "AETHROS" : "RAZORCLAW");
+          else { reiniciarPatron(q); actualizarVisuales(); }   // lo espantaste
+        }, 5000);
+      } else {
+        acecharDucto(q);
+      }
+    }
+
+    // Ophis (ducto izquierdo) y Morwen (ducto derecho) se espantan con la luz
+    function acecharDucto(quien){
+      let t = 0;
+      const miPartida = partida;
+      const luzId = (quien === "ophis") ? "overlayIzq" : "overlayDer";
+      const intervalo = setInterval(() => {
+        if(!gameStarted || miPartida !== partida){ clearInterval(intervalo); return; }
+        if(pausadoPorRotacion) return;
+        if(document.getElementById(luzId).classList.contains("encendida")){
+          clearInterval(intervalo);
+          reiniciarPatron(quien); actualizarVisuales();
+          return;
+        }
+        t++;
+        if(t >= 5){ clearInterval(intervalo); morir(quien === "ophis" ? "OPHIS" : "MORWEN"); }
+      }, 1000);
+    }
+
+    function actualizarVisuales(){
+      ["panda", "tigre", "arañaCam", "ophisCam"].forEach(id => { document.getElementById(id).style.display = "none"; });
+      if (MODO_FIJO) {
+        ["panda","tigre","ophis","morwen"].forEach(q => ubicar(q, currentCam));
+        ["arañaOficina","ophisOficina","cuervoIzq","cuervoDer"].forEach(id => document.getElementById(id).style.display = "block");
+        return;
+      }
+      if (pandaPos === currentCam) ubicar("panda", currentCam);
+      else if (tigrePos === currentCam) ubicar("tigre", currentCam);
+      else if (arañaPos === currentCam) ubicar("morwen", currentCam);
+      else if (ophisPos === currentCam) ubicar("ophis", currentCam);
+      document.getElementById("arañaOficina").style.display = (arañaPos === "ductoR") ? "block" : "none";
+      document.getElementById("ophisOficina").style.display = (ophisPos === "ductoL") ? "block" : "none";
+    }
+
+    function setCam(cam){
+      if (!gameStarted || pausadoPorRotacion) return;
+      if (cuervoFormaCompletaAcechando) { ejecutarAtaqueFormaCompleta(); return; }
+      currentCam = cam;
+      document.getElementById("camLabel").textContent = cam.toUpperCase();
+      document.getElementById("camImage").src = camUrls[cam];
+      actualizarVisuales();
+    }
+
+    function togglePuerta(lado) {
+      if (!gameStarted || pausadoPorRotacion) return;
+      if (cuervoFormaCompletaAcechando) { ejecutarAtaqueFormaCompleta(); return; }
+      if (sinEnergia) return;
+      const p = document.getElementById("puerta" + lado);
+      p.classList.toggle("cerrada");
+      if (p.classList.contains("cerrada")) {
+        sonar("puertaCerrada");
+        if (MODO_FIJO) return;
+        usarEnergia(2);
+        const miPartida = partida;
+        clearInterval(p._timer);
+        p._timer = esperar(() => {
+          if (miPartida !== partida) return;
+          if (p.classList.contains("cerrada")) { usarEnergia(5); p.classList.remove("cerrada"); sonar("puertaAbierta"); }
+        }, 5000);
+      } else {
+        clearInterval(p._timer);
+        sonar("puertaAbierta");
+      }
+    }
+
+    function toggleLuz(lado) {
+      if (!gameStarted || pausadoPorRotacion) return;
+      if (cuervoFormaCompletaAcechando) { ejecutarAtaqueFormaCompleta(); return; }
+      if (sinEnergia) return;
+      const o = document.getElementById("overlay" + lado);
+      o.classList.toggle("encendida");
+      if (o.classList.contains("encendida")) {
+        sonar("luzON");
+        if (MODO_FIJO) return;
+        usarEnergia(2);
+        const miPartida = partida;
+        clearInterval(o._timer);
+        o._timer = esperar(() => {
+          if (miPartida !== partida) return;
+          if (o.classList.contains("encendida")) { usarEnergia(5); o.classList.remove("encendida"); sonar("luzOFF"); }
+        }, 5000);
+      } else {
+        clearInterval(o._timer);
+        sonar("luzOFF");
+      }
+    }
+
+    // --- NOX CHICO: bloquea la puerta y la luz de un lado durante 6 segundos ---
+    function mostrarCuervo(lado) {
+      const c = document.getElementById("cuervo" + lado);
+      sonar("cuervo");
+      c.style.display = "block";
+      if (lado === "Izq") bloqueoIzq = true; else bloqueoDer = true;
+      const bp = document.getElementById("btnPuerta" + lado), bl = document.getElementById("btnLuz" + lado);
+      if (bp) bp.disabled = true;
+      if (bl) bl.disabled = true;
+      const miPartida = partida;
+      esperar(() => {
+        if (miPartida !== partida) return;
+        c.style.display = "none";
+        if (lado === "Izq") bloqueoIzq = false; else bloqueoDer = false;
+        if (!sinEnergia) { if (bp) bp.disabled = false; if (bl) bl.disabled = false; }
+      }, 6000);
+    }
+
+    // --- NOX, FORMA FINAL (solo noche 6) ---
+    // Primero se escuchan sus pasos; después aparece en la oficina durante 3 segundos.
+    // Mientras está, si tocás cualquier cosa (puertas, luces, cámaras o teclas) te ataca.
+    let cuervoFormaCompletaAcechando = false;
+    let noxEnCamino = false;
+    let aparicionesCuervoNoche6 = 0;
+
+    function invocarCuervoFormaCompleta() {
+      if (!gameStarted || cuervoFormaCompletaAcechando || noxEnCamino || nocheActual !== 6) return;
+      noxEnCamino = true;
+      aparicionesCuervoNoche6++;
+      const capa = document.getElementById("cuervo-de-pie-office");
+      const img = document.getElementById("img-cuervo-de-pie");
+      const miPartida = partida;
+      sonar("avisoCuervo");                       // pasos (aviso)
+      esperar(() => {
+        if (!gameStarted || miPartida !== partida) { noxEnCamino = false; return; }
+        sonar("aparicionCuervo");
+        img.src = URL_CUERVO_PIE;
+        capa.style.display = "flex";
+        cuervoFormaCompletaAcechando = true;      // desde acá, no tocar nada
+        esperar(() => {
+          noxEnCamino = false;
+          if (miPartida !== partida) return;
+          if (cuervoFormaCompletaAcechando) { cuervoFormaCompletaAcechando = false; capa.style.display = "none"; }
+        }, 3000);
+      }, 2500);
+    }
+
+    function ejecutarAtaqueFormaCompleta() {
+      if (!cuervoFormaCompletaAcechando) return;
+      cuervoFormaCompletaAcechando = false;
+      document.getElementById("cuervo-de-pie-office").style.display = "none";
+      morir("NOX");
+    }
+
+    function usarEnergia(c) {
+      energia -= c;
+      if (energia < 0) energia = 0;
+      document.getElementById("energia").textContent = energia + "%";
+      const bar = document.getElementById("energiaBar");
+      if (bar) {
+        bar.style.width = energia + "%";
+        bar.classList.remove("media", "baja");
+        if (energia <= 20) bar.classList.add("baja");
+        else if (energia <= 50) bar.classList.add("media");
+      }
+      if (energia === 0) corteDeEnergia();
+    }
+    let sinEnergia = false;
+
+    function corteDeEnergia() {
+      if (sinEnergia) return;
+      sinEnergia = true;
+      document.getElementById("puertaIzq").classList.remove("cerrada");
+      document.getElementById("puertaDer").classList.remove("cerrada");
+      document.getElementById("overlayIzq").classList.remove("encendida");
+      document.getElementById("overlayDer").classList.remove("encendida");
+      ["btnPuertaIzq","btnPuertaDer","btnLuzIzq","btnLuzDer"].forEach(id => document.getElementById(id).disabled = true);
+      document.querySelectorAll(".cam-btn-mapa").forEach(btn => btn.disabled = true);
+      document.getElementById("oficina").style.filter = "brightness(0)";
+      document.getElementById("camaras").style.filter = "brightness(0)";
+    }
+
+    function avanzarHora() {
+      if (!gameStarted) return;
+      hora++;
+      const h = ["12 AM", "1 AM", "2 AM", "3 AM", "4 AM", "5 AM", "6 AM"];
+      document.getElementById("hora").textContent = h[hora];
+      if (hora !== 6) return;
+      sonar("alarma");   // suena el reloj: terminó la noche
+
+      gameStarted = false;
+      partida++;
+      if (window.gameIntervals) window.gameIntervals.forEach(clearInterval);
+      const btn = document.getElementById("retryBtn");
+
+      if (nocheActual < 5) {
+        const nocheSuperada = nocheActual;
+        nocheActual++;
+        document.getElementById("victoryScreen").style.display = "flex";
+        document.getElementById("victoryHour").textContent = "6:00 AM";
+        document.getElementById("victoryMessage").textContent = "SOBREVIVISTE A LA NOCHE " + nocheSuperada;
+        document.querySelector('.night-title').textContent = "NOCHE " + nocheActual;
+        btn.style.display = "block";
+        btn.textContent = "CONTINUAR A LA NOCHE " + nocheActual;
+        btn.onclick = volverANoche1;
+      } else if (nocheActual === 5) {
+        nocheActual = 6;
+        document.getElementById("victoryScreen").style.display = "flex";
+        document.getElementById("victoryHour").textContent = "6:00 AM";
+        document.getElementById("victoryMessage").innerHTML = "<span style='color:yellow'>¡NOCHE 6 DESBLOQUEADA!</span><br>HAS SOBREVIVIDO A LA PESADILLA";
+        document.querySelector('.night-title').textContent = "NOCHE 6";
+        btn.style.display = "block";
+        btn.textContent = "ENTRAR A LA NOCHE 6";
+        btn.onclick = volverANoche1;
+      } else {
+        document.getElementById("victoryScreen").style.display = "flex";
+        document.getElementById("victoryHour").textContent = "¡ERES LIBRE!";
+        document.getElementById("victoryMessage").innerHTML = "HAS SOBREVIVIDO A LA MÁXIMA OSCURIDAD<br>DARKNESS COMPLETADO";
+        btn.style.display = "block";
+        btn.textContent = "CRÉDITOS / VOLVER AL MENÚ";
+        btn.onclick = mostrarCreditos;
+      }
+    }
+
+    function pantallaMuerte(nombre){
+      document.getElementById("jumpscareOverlay").style.display = "none";
+      document.getElementById("victoryScreen").style.display = "flex";
+      document.getElementById("victoryHour").textContent = "TU ESTAS MUERTO";
+      document.getElementById("victoryMessage").textContent = nombre + " TE ATRAPÓ";
+      const btn = document.getElementById("retryBtn");
+      btn.textContent = "Reintentar Noche " + nocheActual;
+      btn.onclick = volverANoche1;
+      setTimeout(() => { btn.style.display = "block"; }, 5000);
+    }
+
+    function morir(nombre){
+      if(!gameStarted) return;
+      gameStarted = false;
+      partida++;
+      if (window.gameIntervals) window.gameIntervals.forEach(clearInterval);
+
+      const overlay = document.getElementById("jumpscareOverlay");
+      const video = document.getElementById("jumpscareVideo");
+      overlay.style.display = "flex";
+
+      let terminado = false;
+      const terminar = () => {
+        if(terminado) return; terminado = true;
+        video.pause(); video.onended = null;
+        pantallaMuerte(nombre);
+      };
+      video.style.display = "block";
+      video.muted = muteado;
+      video.onended = terminar;
+      video.src = videoCache[nombre] || jsVideos[nombre];
+      video.currentTime = 0;
+      video.play().catch(terminar);
+      setTimeout(terminar, 8000);   // por si el video se traba
+    }
+
+    function volverANoche1(){
+      const jv = document.getElementById("jumpscareVideo");
+      if (jv) { jv.pause(); jv.style.display = "none"; }
+      document.getElementById("retryBtn").style.display = "none";
+      document.getElementById("victoryScreen").style.display = "none";
+      document.getElementById("game-interface").style.display = "flex";
+
+      energia = 100; hora = 0; tiempoHora = 0;
+      document.getElementById("energia").textContent = "100%";
+      document.getElementById("hora").textContent = "12 AM";
+      const bar = document.getElementById("energiaBar");
+      if (bar) { bar.style.width = "100%"; bar.classList.remove("media", "baja"); }
+      sinEnergia = false;
+      document.getElementById("oficina").style.filter = "";
+      document.getElementById("camaras").style.filter = "";
+
+      // puertas abiertas, luces apagadas, sin cuervos
+      ["puertaIzq","puertaDer"].forEach(id => { const p = document.getElementById(id); clearInterval(p._timer); p.classList.remove("cerrada"); });
+      ["overlayIzq","overlayDer"].forEach(id => { const o = document.getElementById(id); clearInterval(o._timer); o.classList.remove("encendida"); });
+      ["cuervoIzq","cuervoDer"].forEach(id => document.getElementById(id).style.display = "none");
+      document.getElementById("cuervo-de-pie-office").style.display = "none";
+      bloqueoIzq = bloqueoDer = false;
+      cuervoFormaCompletaAcechando = false; noxEnCamino = false;
+
+      pandaPos = tigrePos = arañaPos = ophisPos = null;
+      actualizarVisuales();
+
+      screens.forEach(s => s.classList.remove("active"));
+      document.querySelector('.screen[data-index="9"]').classList.add("active");
+      document.getElementById('mapaContainer').style.display = 'none';
+      document.getElementById('hud').style.display = 'none';
+      gameStarted = false;
+
+      ["btnPuertaIzq","btnPuertaDer","btnLuzIzq","btnLuzDer"].forEach(id => document.getElementById(id).disabled = false);
+      document.querySelectorAll(".cam-btn-mapa").forEach(btn => btn.disabled = false);
+    }
+
+    function mostrarCreditos() {
+      document.getElementById("victoryScreen").style.display = "none";
+      document.getElementById("game-interface").style.display = "none";
+      document.getElementById("creditsScreen").style.display = "flex";
+    }
+
+function honk(){
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel(); // Detiene cualquier voz activa
+
+  const ut = new SpeechSynthesisUtterance("Bienvenidos a cinco noches de oscuridad");
+  
+  // 1. AJUSTES DE TONO (Grave pero no zombie)
+  ut.pitch = 0.7; 
+  ut.rate = 0.9;
+  ut.volume = 1;
+
+  // 2. BUSCAR VOZ DE HOMBRE (FILTRO ESTRICTO)
+  const voces = window.speechSynthesis.getVoices();
+  
+  // Lista de nombres comunes de voces de hombre en diferentes sistemas
+  const nombresHombre = ["Raul", "David", "Pablo", "Google Español", "Microsoft Male", "Guy", "Stefan"];
+  
+  let vozSeleccionada = voces.find(v => {
+    const esHombre = nombresHombre.some(nombre => v.name.includes(nombre));
+    const esLatino = v.lang.includes('MX') || v.lang.includes('US') || v.lang.includes('419');
+    return esHombre && esLatino; // Prioriza Hombre + Latino
+  });
+
+  // Si no encontró latino, busca cualquier hombre (aunque sea de otro país, el pitch lo arregla)
+  if (!vozSeleccionada) {
+    vozSeleccionada = voces.find(v => nombresHombre.some(nombre => v.name.includes(nombre)));
+  }
+
+  if (vozSeleccionada) {
+    ut.voice = vozSeleccionada;
+    ut.lang = vozSeleccionada.lang;
+  } else {
+    // Si el sistema no tiene voces de hombre instaladas, forzamos el idioma neutro
+    ut.lang = "es-MX";
+  }
+
+  window.speechSynthesis.speak(ut);
+}
+
+// ESTO ASEGURA QUE LAS VOCES CARGUEN ANTES DE DAR CLIC
+if (window.speechSynthesis) window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
+
+// --- TECLADO ---
+window.addEventListener('keydown', function(event) {
+    if (!gameStarted) return;
+    // Nox (forma final) presente: cualquier tecla dispara el ataque
+    if (cuervoFormaCompletaAcechando) { ejecutarAtaqueFormaCompleta(); return; }
+    const tecla = event.key.toLowerCase();
+    if (tecla === 'a' && !bloqueoIzq) togglePuerta('Izq');
+    if (tecla === 'q' && !bloqueoIzq) toggleLuz('Izq');
+    if (tecla === 'd' && !bloqueoDer) togglePuerta('Der');
+    if (tecla === 'e' && !bloqueoDer) toggleLuz('Der');
+    if (tecla >= '1' && tecla <= '9') setCam('cam0' + tecla);
+});
+</script>
+</body>
+</html>
